@@ -1,0 +1,15 @@
+[project]
+name = "mcp-server-a"
+version = "0.0.0"
+description = "Fake CRM MCP server — validates aud=api://mcp-server-a"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp==3.4.2",
+    "pydantic>=2.11",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.7"]
+
+[tool.ruff]
+line-length = 100

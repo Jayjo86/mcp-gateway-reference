@@ -1,0 +1,74 @@
+# The guards this repo argues for, actually running.
+#
+# Two claims in the source depend on this file existing: app/auth.py says an
+# upstream FastMCP rename "fails CI instead of silently reverting us to
+# authorizing ourselves", and tests/test_principal.py says a data.json typo is
+# "an outage. Catch it in CI instead." Both were aspirational until this landed.
+#
+# Versions are pinned to what the rest of the repo pins: OPA matches the image
+# docker-compose.yml serves, so a policy that passes here is a policy that
+# passes there.
+#
+# Actions are pinned to exact release tags, not floating majors. Partly for the
+# same reason everything else here is pinned, and partly because floating majors
+# are not reliably published: astral-sh/setup-uv stopped cutting bare `vN` tags
+# after v7, so `@v10` resolves to nothing at all. Exact tags also keep the
+# runtime current — `setup-opa@v2` still points at a Node 20 build that the
+# runner now force-migrates with a deprecation warning; `@v2.4.0` is Node 24.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # one service failing shouldn't hide the others' results
+      matrix:
+        service: [gateway-fastmcp, mcp-server-a, mcp-server-b]
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.8.8"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "${{ matrix.service }}/uv.lock"
+      # --frozen, matching the Dockerfiles: fail if uv.lock drifted from
+      # pyproject.toml rather than silently resolving a different dependency set.
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+
+  policy:
+    name: rego
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: open-policy-agent/setup-opa@v2.4.0
+        with:
+          version: "1.16.1" # same as docker-compose.yml's opa service
+      # Tests live outside the served bundle on purpose, so both paths are named.
+      - run: opa test policy/bundle policy/tests
+
+  images:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # Doubles as a check that .env.example is complete enough for compose to
+      # interpolate — the file a first-time reader actually copies.
+      - run: cp .env.example .env
+      - run: docker compose config --quiet
+      - run: docker compose build

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# uv
+# uv.lock IS committed — do not ignore it
+
+# env / secrets
+.env
+.env.local
+*.pem
+*.key
+*.crt
+certs/
+
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# runtime
+*.log
+
+# experimental
+experimental/
+
+# Plan
+plan/
+
+# CLAUDE
+.claude/
+CLAUDE.md
+
+# Articles
+article/

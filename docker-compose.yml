@@ -1,0 +1,82 @@
+name: mcp-gateway-reference
+
+services:
+  gateway:
+    build: ./gateway-fastmcp
+    env_file: .env
+    ports:
+      - "8443:8000"
+    depends_on:
+      opa:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      mcp-server-a:
+        condition: service_started
+      mcp-server-b:
+        condition: service_started
+    # TLS certs for local https — generate with scripts/gen-local-certs.sh
+    volumes:
+      - ./certs:/certs:ro
+
+  # The backends get an explicit env allowlist rather than the full `.env` —
+  # they have no business seeing GATEWAY_CLIENT_SECRET, POSTGRES_PASSWORD or
+  # AUDIT_DATABASE_URL. `${VAR}` is interpolated from the top-level `.env`, so
+  # only these four values land inside the container.
+  mcp-server-a:
+    build: ./mcp-server-a
+    environment:
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID}
+      MCP_SERVER_A_AUDIENCE: ${MCP_SERVER_A_AUDIENCE}
+      MCP_SERVER_A_APP_ID: ${MCP_SERVER_A_APP_ID}
+      MCP_RESOURCE_URL: http://localhost:9001/mcp
+    ports:
+      - "9001:9000"
+
+  mcp-server-b:
+    build: ./mcp-server-b
+    environment:
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID}
+      MCP_SERVER_B_AUDIENCE: ${MCP_SERVER_B_AUDIENCE}
+      MCP_SERVER_B_APP_ID: ${MCP_SERVER_B_APP_ID}
+      MCP_RESOURCE_URL: http://localhost:9002/mcp
+    ports:
+      - "9002:9000"
+
+  opa:
+    # Pinned, not :latest — the Rego v0→v1 syntax break (this bundle relies on
+    # v1 defaults: `if`/`in` with no `import rego.v1`) is exactly the kind of
+    # thing :latest hands you one morning.
+    image: openpolicyagent/opa:1.16.1
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - --log-level=info
+      - /policy/bundle
+      - /policy/data.json
+    volumes:
+      - ./policy:/policy:ro
+    # No published port: OPA is reached only by the gateway over the compose
+    # bridge network. Raw tool arguments cross this channel (see opa_client.py),
+    # so "unreachable from outside this network" is the actual safety property.
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

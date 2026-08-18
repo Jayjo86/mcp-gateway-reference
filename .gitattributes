@@ -1,0 +1,12 @@
+# Normalise to LF in the repository. The working tree here is mixed (core.autocrlf
+# on Windows), which git currently hides because it stores LF either way — but
+# that depends on every contributor's local config being right. Pin it instead.
+* text=auto eol=lf
+
+# Shell scripts especially: a CRLF gen-local-certs.sh fails on Linux and macOS
+# with "bad interpreter: /usr/bin/env bash^M", and the README tells people to run it.
+*.sh text eol=lf
+
+# Binary — never touch these.
+*.png binary
+*.jpg binary

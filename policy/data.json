@@ -1,0 +1,44 @@
+{
+  "platform": {
+    "agent_enforcement": "audit",
+    "allowed_agents": [
+      "https://claude.ai/oauth/claude-code-client-metadata"
+    ],
+    "allowed_dynamic_client_ids": []
+  },
+  "domain": {
+    "enabled_servers": [
+      "mcp-server-a",
+      "mcp-server-b"
+    ],
+    "server_roles": {
+      "mcp-server-a": [
+        "crm.read"
+      ],
+      "mcp-server-b": [
+        "ledger.read"
+      ]
+    }
+  },
+  "tools": {
+    "crm_list_customers": {
+      "server": "mcp-server-a"
+    },
+    "crm_update_customer": {
+      "server": "mcp-server-a",
+      "required_role": "Crm-Customers.Write",
+      "allowed_tiers": [
+        "smb",
+        "enterprise"
+      ]
+    },
+    "ledger_get_balance": {
+      "server": "mcp-server-b"
+    },
+    "ledger_post_entry": {
+      "server": "mcp-server-b",
+      "required_role": "Ledger.Write",
+      "max_amount": 1000000
+    }
+  }
+}

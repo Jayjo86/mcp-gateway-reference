@@ -1,0 +1,35 @@
+name: mcp-gateway-reference
+
+# Overlay: intercept gateway → mcp-server-a/b traffic with mitmproxy.
+# Auth-flow detail comes from gateway logs (LOG_TRAFFIC=true in .env).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.mitm.yml up
+#
+# Open http://localhost:8081 for the mitmweb UI.
+
+services:
+  mitmproxy:
+    image: mitmproxy/mitmproxy:10.1.1
+    command: >
+      mitmweb
+      --listen-host 0.0.0.0
+      --listen-port 8080
+      --web-host 0.0.0.0
+      --web-port 8081
+      --no-web-open-browser
+    ports:
+      - "8081:8081"
+
+  gateway:
+    environment:
+      HTTP_PROXY: http://mitmproxy:8080
+      # The OPA calls carry the tool arguments each tool declares as
+      # policy-relevant (a ledger amount, a customer tier). Without this, httpx2
+      # honours HTTP_PROXY for all plain-HTTP traffic and this debugging overlay
+      # would dump them into mitmweb. postgres isn't HTTP so HTTP_PROXY can't
+      # touch it — listed anyway, in case an HTTP-based audit sink shows up.
+      NO_PROXY: opa,postgres
+    depends_on:
+      mitmproxy:
+        condition: service_started

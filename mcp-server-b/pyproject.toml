@@ -1,0 +1,16 @@
+[project]
+name = "mcp-server-b"
+version = "0.0.0"
+description = "Fake ledger MCP server — validates aud=api://mcp-server-b"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp==3.4.2",
+    "pyjwt[crypto]>=2.9",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.7"]
+
+[tool.ruff]
+line-length = 100
+

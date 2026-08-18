@@ -1,0 +1,25 @@
+[project]
+name = "mcp-gateway-fastmcp"
+version = "0.0.0"
+description = "Enterprise MCP Gateway — reference implementation (gateway on FastMCP substrate)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp==3.4.2",
+    "httpx2>=2.10",
+    "pydantic-settings>=2.5",
+    "pyjwt[crypto]>=2.9",
+    "asyncpg>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,35 @@
+# Who owns which policy layer.
+#
+# The three-layer Rego bundle exists so that three DIFFERENT groups can own three
+# different questions without editing each other's files:
+#
+#   platform.rego  — the platform team: global guardrails, and the single decision
+#                    the gateway queries. Domain teams must not edit it.
+#   domain.rego    — each domain team, for the MCP server(s) they run: which
+#                    backends are enabled and which app roles may reach them.
+#   tool.rego      — the owning tool team: per-tool entitlements and argument
+#                    constraints.
+#
+# All three files say so in their headers and name CODEOWNERS as the mechanism.
+# This file is that mechanism. In this reference repo every line points at the
+# same person, because there is only one — in a real deployment the whole value
+# is that these lines point at three different teams, and a change to a tool's
+# argument cap cannot be merged by the person who wrote the platform guardrails.
+# Splitting them is a find-and-replace, not a redesign.
+
+/policy/bundle/mcp/platform.rego            @Jayjo86
+/policy/bundle/mcp/domain.rego              @Jayjo86
+/policy/bundle/mcp/tool.rego                @Jayjo86
+
+# The facts all three layers decide against, and the gateway-side half of the
+# same table (server, required_role, regulatory tags, least-privilege scope).
+# They are two hand-maintained copies of one fact — tests/test_registry_policy_
+# agreement.py fails if they disagree — so they change together, under one owner.
+/policy/data.json                           @Jayjo86
+/gateway-fastmcp/app/tools/registry.py      @Jayjo86
+
+# The controls the policy layers rest on: inbound OAuth, the PEP, and the
+# no-passthrough downstream exchange.
+/gateway-fastmcp/app/auth.py                @Jayjo86
+/gateway-fastmcp/app/middleware/            @Jayjo86
+/gateway-fastmcp/app/downstream/            @Jayjo86
